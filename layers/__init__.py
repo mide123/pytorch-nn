@@ -1,6 +1,6 @@
 from .interaction import *
 from .core import *
-from .utils import concat_fun
+from .utils import *
 from .sequence import *
 
 

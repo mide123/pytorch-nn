@@ -27,7 +27,7 @@ from ..inputs import build_input_features, SparseFeat, DenseFeat, VarLenSparseFe
     create_embedding_matrix, varlen_embedding_lookup
 from layers import PredictionLayer
 from layers import slice_arrays
-from ..callbacks import History
+from callbacks.callbacks import History
 
 
 class Linear(nn.Module):
