@@ -10,20 +10,19 @@ try:
     from tensorflow.python.keras.callbacks import CallbackList
 except ImportError:
     from tensorflow.python.keras._impl.keras.callbacks import CallbackList
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-import numpy as np
-from sklearn.metrics import *
 import time
 from callbacks.callbacks import History
 from ..inputs import build_input_features, create_embedding_matrix, SparseFeat, DenseFeat
 from layers.core import PredictionLayer
+from .metric import *
 
 
 class BaseModel(nn.Module):
-    def __init__(self, series_features, general_features, bashsize=32, init_std=0.0001, task='regression', device='cpu', log=None):
+    def __init__(self, series_features, general_features, bashsize=32, init_std=0.0001, task='regression', device='cpu',
+                 log=None):
 
         super(BaseModel, self).__init__()
         all_features = series_features + general_features
@@ -126,14 +125,6 @@ class BaseModel(nn.Module):
         :param validation_data: dataloader date.
         :return: Dict contains metric names and metric values.
         """
-        # x = list(validation_data)[0]
-        #
-        # pred_ans = self.predict(x, batch_size)
-        # eval_result = {}
-        # for name, metric_fun in self.metrics.items():
-        #     eval_result[name] = metric_fun(y, pred_ans)
-        # return eval_result
-
         model = self.eval()
         pred_ans = []
         y = []
@@ -203,7 +194,9 @@ class BaseModel(nn.Module):
 
     def _get_loss_func(self, loss):
         if isinstance(loss, str):
-            if loss == "binary_crossentropy":
+            if loss == "cross_entropy":
+                loss_func = F.cross_entropy
+            elif loss == "binary_crossentropy":
                 loss_func = F.binary_cross_entropy
             elif loss == "mse":
                 loss_func = F.mse_loss
@@ -224,12 +217,6 @@ class BaseModel(nn.Module):
                         sample_weight,
                         labels)
 
-    def get_accuracy_score(self, y_true, y_pred):
-        return accuracy_score(y_true, np.where(y_pred > 0.5, 1, 0))
-
-    def get_recall_score(self, y_true, y_pred):
-        return recall_score(y_true, np.where(y_pred > 0.5, 1, 0))
-
     def _get_metrics(self, metrics, set_eps=False):
         metrics_ = {}
         if metrics:
@@ -243,12 +230,16 @@ class BaseModel(nn.Module):
                     metrics_[metric] = roc_auc_score
                 if metric == "mse":
                     metrics_[metric] = mean_squared_error
-                if metric == 'mae':
-                    metrics_[metric] = mean_absolute_error
                 if metric == "accuracy" or metric == "acc":
-                    metrics_[metric] = self.get_accuracy_score
+                    metrics_[metric] = get_accuracy_score
+                if metric == "acc_mul":
+                    metrics_[metric] = get_accuracy_score_mul
+                if metric == "recall_score_mul":
+                    metrics_[metric] = get_recall_score_mul
+                if metric == "ndcg":
+                    metrics_[metric] = get_ndcg_score
                 if metric == "recall_score":
-                    metrics_[metric] = self.get_recall_score
+                    metrics_[metric] = get_recall_score
                 self.metrics_names.append(metric)
         return metrics_
 

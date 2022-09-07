@@ -30,14 +30,14 @@ def check_version(version):
                 releases = j.get('releases', [])
                 for release in releases:
                     ver = parse(release)
-                    if ver.is_prerelease or  ver.is_postrelease:
+                    if ver.is_prerelease or ver.is_postrelease:
                         continue
                     latest_version = max(latest_version, ver)
                 if latest_version > version:
                     logging.warning(
                         '\nDeepCTR-PyTorch version {0} detected. Your version is {1}.\nUse `pip install -U deepctr-torch` to upgrade.Changelog: https://github.com/shenweichen/DeepCTR-Torch/releases/tag/v{0}'.format(
                             latest_version, version))
-        except :
+        except:
             print("Please check the latest version manually on https://pypi.org/project/deepctr-torch/#history")
             return
 

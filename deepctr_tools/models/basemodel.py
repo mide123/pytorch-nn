@@ -96,6 +96,10 @@ class BaseModel(nn.Module):
                  init_std=0.0001, seed=1024, task='binary', device='cpu', gpus=None):
 
         super(BaseModel, self).__init__()
+        self.metrics = None
+        self.loss_func = None
+        self.optim = None
+        self.metrics_names = None
         torch.manual_seed(seed)
         self.dnn_feature_columns = dnn_feature_columns
 
@@ -341,7 +345,6 @@ class BaseModel(nn.Module):
         return np.concatenate(pred_ans).astype("float64")
 
     def input_from_feature_columns(self, X, feature_columns, embedding_dict, support_dense=True):
-
         sparse_feature_columns = list(
             filter(lambda x: isinstance(x, SparseFeat), feature_columns)) if len(feature_columns) else []
         dense_feature_columns = list(
@@ -422,27 +425,39 @@ class BaseModel(nn.Module):
     def compile(self, optimizer,
                 loss=None,
                 metrics=None,
+                optim_dict=None
                 ):
         """
         :param optimizer: String (name of optimizer) or optimizer instance. See [optimizers](https://pytorch.org/docs/stable/optim.html).
         :param loss: String (name of objective function) or objective function. See [losses](https://pytorch.org/docs/stable/nn.functional.html#loss-functions).
         :param metrics: List of metrics to be evaluated by the model during training and testing. Typically you will use `metrics=['accuracy']`.
         """
+        if optim_dict is None:
+            optim_dict = {'lr': .05, 'momentum': 0, 'weight_decay': 0, 'eps': 1e-6}
         self.metrics_names = ["loss"]
-        self.optim = self._get_optim(optimizer)
+        self.optim = self._get_optim(optimizer, optim_dict)
         self.loss_func = self._get_loss_func(loss)
         self.metrics = self._get_metrics(metrics)
 
-    def _get_optim(self, optimizer):
+    def _get_optim(self, optimizer, optim_dict):
+        lr = 0.001 if 'lr' in optim_dict else optim_dict['lr']
+        weight_decay = 0.0 if 'weight_decay' in optim_dict else optim_dict['weight_decay']
+        momentum = 0.0 if 'momentum' in optim_dict else optim_dict['momentum']
+        eps = 1e-6 if 'eps' in optim_dict else optim_dict['eps']
+
         if isinstance(optimizer, str):
             if optimizer == "sgd":
-                optim = torch.optim.SGD(self.parameters(), lr=0.01)
+                optim = torch.optim.SGD(self.parameters(), lr=lr, weight_decay=weight_decay, momentum=momentum)
             elif optimizer == "adam":
-                optim = torch.optim.Adam(self.parameters())  # 0.001
+                optim = torch.optim.Adam(self.parameters(), lr=lr, weight_decay=weight_decay)  # 0.001
             elif optimizer == "adagrad":
-                optim = torch.optim.Adagrad(self.parameters())  # 0.01
+                optim = torch.optim.Adagrad(self.parameters(), lr=lr, weight_decay=weight_decay)  # 0.01
             elif optimizer == "rmsprop":
-                optim = torch.optim.RMSprop(self.parameters())
+                optim = torch.optim.RMSprop(self.parameters(), lr=lr, eps=eps, weight_decay=weight_decay, momentum=momentum)
+            elif optimizer == 'sparseAdam':
+                self.optimizer = torch.optim.SparseAdam(self.parameters(), lr=lr, eps=eps)
+            elif optimizer == 'Adadelta':
+                self.optimizer = torch.optim.Adadelta(self.parameters(), lr=lr, eps=eps, weight_decay=weight_decay)
             else:
                 raise NotImplementedError
         else:

@@ -9,11 +9,9 @@ import os
 
 
 def get_file_list(input_path):
-    dir_list = []
     file_list = []
 
     for root, dirs, files in os.walk(input_path):
-        dir_list = dirs
         file_list = files
         break
 

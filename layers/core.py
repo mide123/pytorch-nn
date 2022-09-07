@@ -157,6 +157,8 @@ class PredictionLayer(nn.Module):
             output += self.bias
         if self.task == "binary":
             output = torch.sigmoid(output)
+        if self.task == "multiclass":
+            output = torch.softmax(output, dim=-1)
         return output
 
 
