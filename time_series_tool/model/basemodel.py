@@ -89,7 +89,7 @@ class BaseModel(nn.Module):
                     train_result[name].append(metric_fun(
                         label.cpu().data.numpy(), y_pred.cpu().data.numpy().astype("float64")))
 
-            epoch_logs["loss"] = total_loss_epoch / sample_num
+            epoch_logs["loss"] = total_loss_epoch / steps_per_epoch
             for name, result in train_result.items():
                 epoch_logs[name] = np.sum(result) / steps_per_epoch
 
