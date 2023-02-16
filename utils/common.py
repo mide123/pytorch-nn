@@ -23,6 +23,31 @@ def get_file_list(input_path):
     return file_list
 
 
+def seed_everything(seed):
+    import torch
+    '''
+    设置整个开发环境的seed
+    :param seed:
+    :param device:
+    :return:
+    '''
+    import os
+    import random
+    import numpy as np
+
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+
+        # some cudnn methods can be random even after fixing the seed
+        # unless you tell it to be deterministic
+        torch.backends.cudnn.deterministic = True
+
+
 def train_model(data_, test_, y_, folds_):
     oof_preds = np.zeros(data_.shape[0])
     sub_preds = np.zeros(test_.shape[0])
